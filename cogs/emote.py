@@ -50,7 +50,7 @@ class Emote:
             except ValueError:
                 return await ctx.send("❌ You need to provide a url or have an attachment on your message!")
         width, height = image.size
-        noimage = Image.open(os.getcwd() + "\\resources\\no.png")
+        noimage = Image.open(os.getcwd() + "/resources/no.png")
         if width > height:
             noimage.thumbnail((height,height))
             image.paste(noimage, (int((width - height) / 2), 0), noimage)
