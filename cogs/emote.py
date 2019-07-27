@@ -4,8 +4,9 @@ import os
 import io
 import math
 from PIL import Image
+from cogs.utils import checks
 
-class Emote:
+class Emote(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
@@ -31,6 +32,16 @@ class Emote:
         image.save(image_file_object, format="png")
         image_file_object.seek(0)
         return image_file_object
+
+    async def aiosessionget(self, url):
+        data = await self.bot.session.get(url)
+        if data.status == 200:
+            b_data = await data.read()
+            # print(f"Data from {url}: {byte_data}")
+            return b_data
+        else:
+            print(f"HTTP Error {data.status} "
+                  f"while getting {url}")
     
     @commands.group()
     async def emote(self, ctx):
@@ -61,6 +72,41 @@ class Emote:
         image = self.process_image(image)
         image = discord.File(fp=image, filename='noemote.png')
         await ctx.send(file=image)
-     
+
+    @emote.command()
+    @checks.check_permissions_or_owner(manage_emojis=True)
+    async def add(self, ctx, emoji_name: str, url=None):
+        """Adds an emoji to the guild.
+        
+        You must have Manage Emojis permission to use this."""
+        if not url:
+            if ctx.message.attachments:
+                emoji_aio = await self.aiosessionget(ctx.message.attachments[0].url)
+            else:
+                return await ctx.send("❌ You need to provide a url or have an attachment on your message!")
+        else:
+            try:
+                emoji_aio = await self.aiosessionget(url)
+            except ValueError:
+                return await ctx.send("❌ You need to provide a url or have an attachment on your message!")
+
+        try:
+            finalized_e = await ctx.guild.create_custom_emoji(name=emoji_name, image=emoji_aio, 
+                                                              reason=f"Emoji Added by {ctx.author} "
+                                                              f"(ID: {ctx.author.id})")
+        except Exception as ex:
+            print(ex)
+            return await ctx.send("Something went wrong creating that emoji. Make sure this guild"
+                                  " emoji\'s list isn\'t full and that emoji is under 256kb.")
+        await ctx.send(f"Successfully created {finalized_e} -- `{finalized_e}`")
+
+    @add.error
+    async def add_e_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('You gave incorrect arguments.')
+            return await ctx.send_help(ctx.command)
+        elif isinstance(error, commands.CheckFailure):
+            return await ctx.send("You don't have the required permissions to use this command.")
+
 def setup(bot):
     bot.add_cog(Emote(bot))
