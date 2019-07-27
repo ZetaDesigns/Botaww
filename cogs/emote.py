@@ -85,12 +85,14 @@ class Emote(commands.Cog):
             if ctx.message.attachments:
                 emoji_aio = await self.aiosessionget(ctx.message.attachments[0].url)
             else:
-                return await ctx.send("❌ You need to provide a url or have an attachment on your message!")
+                return await ctx.send("❌ You need to provide a url or have an attachment on your message!\n"
+                                      f"Please see `{ctx.prefix}{ctx.command}` for more info.")
         else:
             try:
                 emoji_aio = await self.aiosessionget(url)
             except ValueError:
-                return await ctx.send("❌ You need to provide a url or have an attachment on your message!")
+                return await ctx.send("❌ You need to provide a url or have an attachment on your message!\n"
+                                      f"Please see `{ctx.prefix}{ctx.command}` for more info.")
 
         try:
             finalized_e = await ctx.guild.create_custom_emoji(name=emoji_name, image=emoji_aio, 
@@ -124,11 +126,15 @@ class Emote(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f'{ctx.author.mention}: You gave incorrect arguments.')
             return await ctx.send_help(ctx.command)
+        elif isinstance(error, commands.BotMissingPermissions):
+            rn = '\n-'.join(error.missing_perms)
+            return await ctx.send("Bot is missing permissions. Please add the following permissions\n"
+                                  f"`- {rn}`")
         elif isinstance(error, commands.CheckFailure):
             return await ctx.send(f"{ctx.author.mention}: You don't have the required "
                                   "permissions to use this command.")
         elif isinstance(error, commands.BadArgument):
-            await ctx.send("Emoji not found.")
+            return await ctx.send("Emoji not found.")
 
     @commands.Cog.listener()
     async def on_guild_emojis_update(self, guild, before, after):
