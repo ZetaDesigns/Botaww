@@ -129,7 +129,7 @@ class Emote(commands.Cog):
         elif isinstance(error, commands.BotMissingPermissions):
             rn = '\n-'.join(error.missing_perms)
             return await ctx.send("Bot is missing permissions. Please add the following permissions\n"
-                                  f"`- {rn}`")
+                                  f"```- {rn}```")
         elif isinstance(error, commands.CheckFailure):
             return await ctx.send(f"{ctx.author.mention}: You don't have the required "
                                   "permissions to use this command.")
