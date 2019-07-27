@@ -74,6 +74,7 @@ class Emote(commands.Cog):
         await ctx.send(file=image)
 
     @emote.command()
+    @commands.bot_has_permissions(manage_emojis=True)
     @checks.check_permissions_or_owner(manage_emojis=True)
     async def add(self, ctx, emoji_name: str, url=None):
         """Adds an emoji to the guild.
@@ -100,13 +101,51 @@ class Emote(commands.Cog):
                                   " emoji\'s list isn\'t full and that emoji is under 256kb.")
         await ctx.send(f"Successfully created {finalized_e} -- `{finalized_e}`")
 
+    @emote.command()
+    @commands.bot_has_permissions(manage_emojis=True)
+    @checks.check_permissions_or_owner(manage_emojis=True)
+    async def delete(self, ctx, emote: discord.Emoji):
+        """Deletes an emoji from the guild.
+        
+        You must have Manage Emojis permission to use this.
+        
+        This is a case-sensitive command."""
+        if ctx.guild.id != emote.guild_id:
+            return await ctx.send("That emoji isn't in this guild!")
+
+        await emote.delete(reason=f"Emoji Removed by {ctx.author} (ID: {ctx.author.id})")
+        await ctx.send("Emote is now deleted.")
+
     @add.error
-    async def add_e_error(self, ctx, error):
+    @delete.error
+    async def emoji_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('You gave incorrect arguments.')
             return await ctx.send_help(ctx.command)
         elif isinstance(error, commands.CheckFailure):
             return await ctx.send("You don't have the required permissions to use this command.")
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send("Emoji not found.")
+
+    @commands.Cog.listener()
+    async def on_guild_emojis_update(self, guild, before, after):
+        try:
+            # Search for emoji-list in the guild
+            emoji_chan = discord.utils.get(guild.channels, name='emoji-list')
+            rm_emoji = [f"{emoji}" for emoji in before if emoji not in after]
+            mk_emoji = [f"{emoji} `:{emoji.name}:`" for emoji in after if emoji not in before]
+            # Prepare Message
+            if len(rm_emoji) != 0:
+                msg = "⚠ Emoji Removed: "
+                msg += ", ".join(rm_emoji)
+                await emoji_chan.send(msg)
+            if len(mk_emoji) != 0:
+                msg = "✅ Emoji Added: "
+                msg += ", ".join(mk_emoji)
+                await emoji_chan.send(msg)
+        except:
+            # Handle botaww not being able to talk in the channel
+            pass
 
 def setup(bot):
     bot.add_cog(Emote(bot))
