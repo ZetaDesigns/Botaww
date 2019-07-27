@@ -43,10 +43,11 @@ class Emote(commands.Cog):
             print(f"HTTP Error {data.status} "
                   f"while getting {url}")
     
-    @commands.group()
+    @commands.group(aliases=['emoji'])
     async def emote(self, ctx):
         if ctx.invoked_subcommand is None:
             await ctx.send('You need to specify an emotetype.')
+            await ctx.send_help(ctx.command)
 
     @emote.command()
     async def noemote(self, ctx, url=None):
@@ -108,22 +109,24 @@ class Emote(commands.Cog):
         """Deletes an emoji from the guild.
         
         You must have Manage Emojis permission to use this.
-        
-        This is a case-sensitive command."""
-        if ctx.guild.id != emote.guild_id:
-            return await ctx.send("That emoji isn't in this guild!")
 
-        await emote.delete(reason=f"Emoji Removed by {ctx.author} (ID: {ctx.author.id})")
-        await ctx.send("Emote is now deleted.")
+        This is a case-sensitive command."""
+        if ctx.guild.id == emote.guild.id:
+            await emote.delete(reason=f"Emoji Removed by {ctx.author} (ID: {ctx.author.id})")
+            await ctx.send("Emote is now deleted.")
+        else:
+            return await ctx.send("That emote is not in this guild. "
+                                  "Run this command again in the guild that has that emote")
 
     @add.error
     @delete.error
     async def emoji_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send('You gave incorrect arguments.')
+            await ctx.send(f'{ctx.author.mention}: You gave incorrect arguments.')
             return await ctx.send_help(ctx.command)
         elif isinstance(error, commands.CheckFailure):
-            return await ctx.send("You don't have the required permissions to use this command.")
+            return await ctx.send(f"{ctx.author.mention}: You don't have the required "
+                                  "permissions to use this command.")
         elif isinstance(error, commands.BadArgument):
             await ctx.send("Emoji not found.")
 
