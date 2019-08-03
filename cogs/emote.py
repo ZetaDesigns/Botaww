@@ -75,6 +75,7 @@ class Emote(commands.Cog):
         await ctx.send(file=image)
 
     @emote.command()
+    @commands.guild_only()
     @commands.bot_has_permissions(manage_emojis=True)
     @checks.check_permissions_or_owner(manage_emojis=True)
     async def add(self, ctx, emoji_name: str, url=None):
@@ -105,6 +106,7 @@ class Emote(commands.Cog):
         await ctx.send(f"Successfully created {finalized_e} -- `{finalized_e}`")
 
     @emote.command()
+    @commands.guild_only()
     @commands.bot_has_permissions(manage_emojis=True)
     @checks.check_permissions_or_owner(manage_emojis=True)
     async def delete(self, ctx, emote: discord.Emoji):
@@ -126,6 +128,8 @@ class Emote(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f'{ctx.author.mention}: You gave incorrect arguments.')
             return await ctx.send_help(ctx.command)
+        elif isinstance(error, commands.NoPrivateMessage):
+            return await ctx.send("This command cannot be run in DMs!")
         elif isinstance(error, commands.BotMissingPermissions):
             rn = '\n-'.join(error.missing_perms)
             return await ctx.send("Bot is missing permissions. Please add the following permissions\n"
